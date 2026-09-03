@@ -44,9 +44,11 @@
   .status-box button:disabled{opacity:.6;cursor:default;}
 
   /* ---- KPI cards ---- */
-  section.kpis{margin-top:-30px;}
-  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
-  @media(max-width:880px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+section.kpis{margin-top:-30px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(5, 1fr);gap:14px;} /* Diubah menjadi 5 kolom */
+@media(max-width:1024px){.kpi-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:768px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:480px){.kpi-grid{grid-template-columns:1fr;}}
   .kpi{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:18px 18px 16px;}
   .kpi .lbl{font-size:12.5px;color:var(--gray-600);margin-bottom:8px;}
   .kpi .num{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em;}
@@ -363,12 +365,19 @@ function renderKPIs(){
   const pctRealisasi = totalTermin1 ? totalRealisasi1/totalTermin1 : 0;
   const pctSpj = totalLokusTermin1 ? totalSpjLengkap/totalLokusTermin1 : 0;
 
+  // Menghitung Kab/Kota Berkontrak dan Tidak Berkontrak
+  const kabBerkontrak = RAW.filter(r => r.nilaiKontrak > 0).length;
+  const kabTidakBerkontrak = kabCount - kabBerkontrak;
+
   const cards = [
+    // Kartu baru yang ditambahkan di urutan pertama
+    {lbl:'Status Kontrak', num: fmtInt(kabBerkontrak), sub: fmtInt(kabTidakBerkontrak) + ' belum kontrak'},
     {lbl:'Kab/Kota Terdata', num: fmtInt(kabCount), sub: provCount + ' provinsi'},
     {lbl:'Total Target Lokus', num: fmtInt(totalTarget), sub: fmtInt(totalLokusTermin1) + ' masuk termin I'},
     {lbl:'Total Nilai Kontrak', num: fmtRpShort(totalKontrak), sub: fmtRpShort(totalTermin1) + ' termin I'},
     {lbl:'Realisasi Termin I', num: fmtPct(pctRealisasi), sub: fmtRpShort(totalRealisasi1) + ' tercair &middot; SPJ lengkap ' + fmtPct(pctSpj)},
   ];
+  
   document.getElementById('kpiGrid').innerHTML = cards.map(c =>
     `<div class="kpi"><div class="lbl">${c.lbl}</div><div class="num">${c.num}</div><div class="sub">${c.sub}</div></div>`
   ).join('');
