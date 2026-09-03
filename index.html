@@ -365,9 +365,7 @@ function renderKPIs(){
   const pctRealisasi = totalTermin1 ? totalRealisasi1/totalTermin1 : 0;
   const pctSpj = totalLokusTermin1 ? totalSpjLengkap/totalLokusTermin1 : 0;
 
-  // Menghitung berdasarkan kolom string Ya/Tidak 
-  // (Pastikan 'statusKontrak' sesuai dengan nama properti di kode pemrosesan data sheet Anda)
-  // Penggunaan toLowerCase() dan trim() untuk menghindari error jika ada spasi atau perbedaan huruf besar/kecil di sheet
+  // Menghitung berdasarkan kolom statusKontrak (Ya/Tidak)
   const kabBerkontrak = RAW.filter(r => r.statusKontrak && r.statusKontrak.toString().toLowerCase().trim() === 'ya').length;
   const kabTidakBerkontrak = kabCount - kabBerkontrak;
 
