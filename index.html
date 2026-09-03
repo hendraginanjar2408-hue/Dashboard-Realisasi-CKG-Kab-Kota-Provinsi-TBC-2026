@@ -365,12 +365,13 @@ function renderKPIs(){
   const pctRealisasi = totalTermin1 ? totalRealisasi1/totalTermin1 : 0;
   const pctSpj = totalLokusTermin1 ? totalSpjLengkap/totalLokusTermin1 : 0;
 
-  // Menghitung Kab/Kota Berkontrak dan Tidak Berkontrak
-  const kabBerkontrak = RAW.filter(r => r.nilaiKontrak > 0).length;
+  // Menghitung berdasarkan kolom string Ya/Tidak 
+  // (Pastikan 'statusKontrak' sesuai dengan nama properti di kode pemrosesan data sheet Anda)
+  // Penggunaan toLowerCase() dan trim() untuk menghindari error jika ada spasi atau perbedaan huruf besar/kecil di sheet
+  const kabBerkontrak = RAW.filter(r => r.statusKontrak && r.statusKontrak.toString().toLowerCase().trim() === 'ya').length;
   const kabTidakBerkontrak = kabCount - kabBerkontrak;
 
   const cards = [
-    // Kartu baru yang ditambahkan di urutan pertama
     {lbl:'Status Kontrak', num: fmtInt(kabBerkontrak), sub: fmtInt(kabTidakBerkontrak) + ' belum kontrak'},
     {lbl:'Kab/Kota Terdata', num: fmtInt(kabCount), sub: provCount + ' provinsi'},
     {lbl:'Total Target Lokus', num: fmtInt(totalTarget), sub: fmtInt(totalLokusTermin1) + ' masuk termin I'},
