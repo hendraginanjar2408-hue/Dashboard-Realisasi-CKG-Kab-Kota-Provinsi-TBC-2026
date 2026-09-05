@@ -564,6 +564,17 @@ function geomToPath(geometry, bbox, w, h, pad){
   return d;
 }
 
+function normKabName(s){
+  // Hati-hati: JANGAN hapus prefiks "KOTA " secara umum — banyak provinsi punya
+  // "Kota X" dan "Kabupaten X" sekaligus (mis. Kota Bogor vs Kabupaten Bogor),
+  // menghapusnya bisa bikin dua wilayah berbeda jadi ketuker.
+  return (s||'').trim().toUpperCase()
+    .replace(/^KABUPATEN\s+/, '')
+    .replace(/^KOTA ADMINISTRASI\s+/, 'KOTA ')
+    .replace(/^ADMINISTRASI\s+/, '')
+    .replace(/\s+/g, ' ');
+}
+
 function kabColor(row){
   if (!row) return '#D8DEDC';
   if (!row.statusKontrak) return '#9AA8A4';
@@ -621,7 +632,7 @@ function renderMap(){
     for (const f of feats){
       const kabName = (f.properties.WADMKK||'').trim();
       if (!kabName) continue;
-      const row = RAW.find(r => r.provinsi === mapProvince && r.kabkota.toUpperCase() === kabName.toUpperCase());
+      const row = RAW.find(r => r.provinsi === mapProvince && normKabName(r.kabkota) === normKabName(kabName));
       const color = kabColor(row);
       const d = geomToPath(f.geometry, bbox, MAP_W, MAP_H, MAP_PAD);
       const sub = row
