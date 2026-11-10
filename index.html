@@ -99,17 +99,50 @@
   .table-toolbar input{flex:1;min-width:180px;}
   .table-toolbar .chip{font-size:12.5px;background:var(--teal-100);color:var(--teal-800);border-radius:20px;padding:6px 12px;display:none;align-items:center;gap:6px;cursor:pointer;font-weight:600;}
   .table-toolbar .chip.show{display:inline-flex;}
+  .table-toolbar .dl-btn{font-size:12.5px;background:var(--teal-950);color:#fff;border:none;border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:600;white-space:nowrap;}
+  .table-toolbar .dl-btn:hover{background:var(--teal-800);}
   .table-scroll{overflow-x:auto;border:1px solid var(--gray-200);border-radius:10px;}
-  table{width:100%;border-collapse:collapse;font-size:13px;min-width:820px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:900px;}
   thead th{position:sticky;top:0;background:var(--teal-950);color:#fff;text-align:left;padding:10px 12px;font-weight:600;white-space:nowrap;cursor:pointer;user-select:none;}
   thead th:hover{background:var(--teal-800);}
+  thead th.nosort{cursor:default;}
+  thead th.nosort:hover{background:var(--teal-950);}
+  thead th .arrow{opacity:.55;font-size:10px;margin-left:3px;}
   tbody td{padding:9px 12px;border-top:1px solid var(--gray-200);white-space:nowrap;font-variant-numeric:tabular-nums;}
-  tbody tr:hover{background:var(--teal-50);}
+  tbody tr.kab-row{cursor:pointer;}
+  tbody tr.kab-row:hover{background:var(--teal-50);}
+  tbody tr.detail-row td{white-space:normal;background:var(--teal-50);cursor:default;padding:14px 18px 18px;}
+  tbody tr.detail-row:hover{background:var(--teal-50);}
+  .expand-toggle{display:inline-block;width:16px;text-align:center;color:var(--teal-700);transition:transform .15s ease;font-size:11px;}
+  .expand-toggle.open{transform:rotate(90deg);}
   .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:600;}
   .badge.done{background:var(--green-100);color:var(--green-600);}
   .badge.progress{background:var(--amber-100);color:var(--amber-600);}
   .badge.none{background:var(--gray-200);color:var(--gray-600);}
   .row-count{font-size:12.5px;color:var(--gray-600);margin-top:10px;}
+  .detail-meta{font-size:12.5px;color:var(--gray-600);margin-bottom:10px;}
+  .termin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .termin-box{background:#fff;border:1px solid var(--gray-200);border-radius:8px;padding:10px 12px;}
+  .termin-box-title{font-weight:700;font-size:12.5px;color:var(--teal-800);margin-bottom:6px;}
+  .termin-box-row{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:2px 0;color:var(--gray-600);}
+  .termin-box-row b{color:var(--ink);font-weight:600;}
+  .termin-empty{opacity:.65;}
+  .termin-box-empty{font-size:12px;color:var(--gray-600);font-style:italic;}
+  @media (max-width:720px){.termin-grid{grid-template-columns:1fr;}}
+  .mini-track{display:inline-block;width:64px;height:6px;border-radius:4px;background:var(--gray-200);vertical-align:middle;margin-right:7px;overflow:hidden;}
+  .mini-fill{height:100%;background:var(--teal-600,#0F766E);border-radius:4px;}
+  .mini-fill.full{background:var(--green-600);}
+  .cell-with-bar{display:inline-flex;align-items:center;}
+  .termin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:12px;}
+  .termin-card{background:#fff;border:1px solid var(--gray-200);border-radius:10px;padding:12px 14px;}
+  .termin-card h4{margin:0 0 8px;font-size:12.5px;color:var(--teal-800);text-transform:uppercase;letter-spacing:.04em;}
+  .termin-card dl{margin:0;font-size:12.5px;}
+  .termin-card dl div{display:flex;justify-content:space-between;padding:3px 0;border-top:1px dashed var(--gray-200);}
+  .termin-card dl div:first-child{border-top:none;}
+  .termin-card dl dt{color:var(--gray-600);}
+  .termin-card dl dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums;}
+  .detail-meta{display:flex;flex-wrap:wrap;gap:18px;font-size:12.5px;color:var(--gray-700,#425854);}
+  .detail-meta strong{color:var(--teal-950);font-weight:600;}
 
   /* ---- PIC section ---- */
   .pic-bars{display:flex;flex-direction:column;gap:10px;}
@@ -216,29 +249,44 @@
     <div class="section-head">
       <div>
         <h2>Rincian Kab/Kota</h2>
-        <p>Target lokus, nilai kontrak, realisasi termin I, dan status SPJ per kabupaten/kota. Klik header untuk mengurutkan.</p>
+        <p>Target lokus, nilai kontrak, dan progres SPJ Termin I–III per kabupaten/kota. Klik baris untuk lihat rincian tiap termin, klik header untuk mengurutkan.</p>
       </div>
     </div>
     <div class="card">
       <div class="table-toolbar">
-        <input id="tableSearch" type="text" placeholder="Cari kab/kota…" oninput="renderTable()">
+        <input id="tableSearch" type="text" placeholder="Cari kab/kota atau provinsi…" oninput="renderTable()">
+        <select id="provFilter" onchange="activeProvince = this.value || null; syncProvinceUI(); renderTable();">
+          <option value="">Semua provinsi</option>
+        </select>
+        <select id="statusKontrakFilter" onchange="renderTable()">
+          <option value="">Semua status kontrak</option>
+          <option value="ya">Sudah kontrak</option>
+          <option value="belum">Belum kontrak</option>
+          <option value="unknown">Belum diketahui</option>
+        </select>
+        <select id="progressFilter" onchange="renderTable()">
+          <option value="">Semua progres SPJ</option>
+          <option value="done">SPJ lengkap</option>
+          <option value="progress">Proses SPJ</option>
+          <option value="none">Belum ada SPJ</option>
+        </select>
+        <button class="dl-btn" onclick="downloadTableCsv()">⬇ Unduh CSV</button>
         <div class="chip" id="provChip" onclick="clearProvinceFilter()">Provinsi: <span id="provChipName"></span> ✕</div>
       </div>
       <div class="table-scroll">
         <table>
           <thead>
             <tr>
+              <th class="nosort" style="width:26px"></th>
               <th data-key="provinsi">Provinsi</th>
               <th data-key="kabkota">Kab/Kota</th>
+              <th data-key="pic">PIC</th>
+              <th data-key="statusKontrak">Status Kontrak</th>
               <th data-key="target" style="text-align:right">Target Lokus</th>
               <th data-key="nilaiKontrak" style="text-align:right">Nilai Kontrak</th>
-              <th data-key="nilaiTermin1" style="text-align:right">Kontrak Termin I</th>
-              <th data-key="realisasi1" style="text-align:right">Realisasi Termin I</th>
-              <th data-key="lokusTermin1" style="text-align:right">Lokus Termin I</th>
+              <th data-key="lokusKontrakTotal" style="text-align:right">Lokus Terkontrak (I–III)</th>
               <th data-key="spjLengkap" style="text-align:right">SPJ Lengkap</th>
-              <th data-key="status">Status</th>
-              <th data-key="kontrakSudahTtd">Kontrak</th>
-              <th data-key="pic">PIC</th>
+              <th data-key="progressLabel">Progres SPJ</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -277,6 +325,7 @@ let PROV = [];        // per provinsi aggregates
 let activeProvince = null;
 let sortKey = null, sortDir = 1;
 let charts = {};
+let expandedRows = new Set();
 
 const fmtInt = n => (n||0).toLocaleString('id-ID');
 const fmtRp = n => 'Rp ' + Math.round(n||0).toLocaleString('id-ID');
@@ -305,6 +354,7 @@ function buildRow(row){
     kabkota: (row['Kab/Kota']||'').toString().trim(),
     pic: (row['PIC Verifikator']||'').toString().trim(),
     statusKontrak: (row['statusKontrak']||'').toString().trim(),
+    nomorKontrak: (row['Nomor Kontrak']||'').toString().trim(),
     target: num(row['Target Lokus']),
     nilaiKontrak: num(row['Nilai kontrak']),
     nilaiTermin1: num(row['Nilai Kontrak termin I']),
@@ -319,7 +369,20 @@ function buildRow(row){
     spjTermin2: num(row['Jumlah lokus dengan SPJ Lengkap termin II']),
     spjTermin3: num(row['Jumlah lokus dengan SPJ Lengkap termin III']),
     spjLengkap: num(row['Jumlah Lokus SPJ Lengkap']),
+    // apakah masing-masing termin punya data kontrak (nilai atau jumlah lokus > 0)
+    adaTermin1: num(row['Nilai Kontrak termin I']) > 0 || num(row['Jumlah lokus termin I']) > 0,
+    adaTermin2: num(row['Nilai Kontrak termin II']) > 0 || num(row['Jumlah lokus termin II']) > 0,
+    adaTermin3: num(row['Nilai Kontrak termin III']) > 0 || num(row['Jumlah lokus termin III']) > 0,
   };
+}
+
+function finalizeRow(r){
+  r.lokusKontrakTotal = r.lokusTermin1 + r.lokusTermin2 + r.lokusTermin3;
+  const prog = progressOf(r);
+  r.progressLabel = prog.label;
+  r.progressCls = prog.cls;
+  r.progressRank = prog.rank;
+  return r;
 }
 
 async function loadData(){
@@ -334,7 +397,8 @@ async function loadData(){
     if (data.error) throw new Error(data.error);
     RAW = (data.rows || [])
       .map(buildRow)
-      .filter(r => r.provinsi && r.kabkota);
+      .filter(r => r.provinsi && r.kabkota)
+      .map(finalizeRow);
 
     computeProvinces();
     renderAll();
@@ -366,6 +430,7 @@ function computeProvinces(){
     p.lokusTermin3 += r.lokusTermin3; p.spjLengkap += r.spjLengkap; p.kabCount += 1;
   }
   PROV = Object.values(map).sort((a,b)=>a.provinsi.localeCompare(b.provinsi));
+  populateProvFilterOptions();
 }
 
 function renderAll(){
@@ -492,16 +557,35 @@ function selectProvince(name){
   activeProvince = (activeProvince === name) ? null : name;
   renderProvinces();
   renderTable();
-  document.getElementById('provChip').classList.toggle('show', !!activeProvince);
-  document.getElementById('provChipName').textContent = activeProvince || '';
+  syncProvinceUI();
   mapMode = activeProvince ? 'province' : 'national';
   mapProvince = activeProvince;
   renderMap();
   if (activeProvince) document.getElementById('tableSection').scrollIntoView({behavior:'smooth', block:'start'});
 }
+function populateProvFilterOptions(){
+  const sel = document.getElementById('provFilter');
+  if (!sel) return;
+  const current = sel.value;
+  const names = PROV.map(p => p.provinsi);
+  sel.innerHTML = '<option value="">Semua provinsi</option>' +
+    names.map(n => `<option value="${n.replace(/"/g,'&quot;')}">${n}</option>`).join('');
+  sel.value = names.includes(current) ? current : '';
+}
+function syncProvinceUI(){
+  document.getElementById('provChip').classList.toggle('show', !!activeProvince);
+  document.getElementById('provChipName').textContent = activeProvince || '';
+  const sel = document.getElementById('provFilter');
+  if (sel) sel.value = activeProvince || '';
+  renderProvinces();
+  mapMode = activeProvince ? 'province' : 'national';
+  mapProvince = activeProvince;
+  renderMap();
+}
 function clearProvinceFilter(){
   activeProvince = null; renderProvinces(); renderTable();
   document.getElementById('provChip').classList.remove('show');
+  const sel = document.getElementById('provFilter'); if (sel) sel.value = '';
   mapMode = 'national'; mapProvince = null; renderMap();
 }
 
@@ -692,49 +776,117 @@ function renderPIC(){
     : `<div class="pic-bars">${bars}</div>`;
 }
 
-function statusOf(r){
-  if (r.target === 0) return {label:'Belum ada lokus', cls:'none'};
-  if (r.spjLengkap >= r.lokusTermin1 && r.lokusTermin1 > 0) return {label:'SPJ Termin I lengkap', cls:'done'};
-  if (r.lokusTermin1 > 0) return {label:'Proses Termin I', cls:'progress'};
-  return {label:'Belum kontrak', cls:'none'};
+// Klasifikasi progres SPJ per kab/kota berdasarkan termin yang sudah berjalan.
+// rank dipakai untuk sorting kolom "Progres SPJ".
+function progressOf(r){
+  if (!r.statusKontrak || r.statusKontrak.toLowerCase() !== 'ya'){
+    return {label:'Belum kontrak', cls:'none', rank:0};
+  }
+  if (r.lokusKontrakTotal === 0){
+    return {label:'Kontrak, belum ada lokus', cls:'none', rank:1};
+  }
+  if (r.spjLengkap > 0 && r.spjLengkap >= r.lokusKontrakTotal){
+    return {label:'SPJ lengkap semua termin', cls:'done', rank:4};
+  }
+  if (r.spjLengkap > 0){
+    return {label:'Proses SPJ (' + fmtInt(r.spjLengkap) + '/' + fmtInt(r.lokusKontrakTotal) + ' lokus)', cls:'progress', rank:3};
+  }
+  return {label:'Belum ada SPJ', cls:'progress', rank:2};
+}
+
+// id util: dipakai sebagai key baris yang sedang dibuka (expand) di tabel.
+function rowKey(r){ return r.provinsi + '|' + r.kabkota; }
+
+function terminCell(label, nilai, lokus, spj, realisasi, ada){
+  if (!ada){
+    return `<div class="termin-box termin-empty">
+      <div class="termin-box-title">${label}</div>
+      <div class="termin-box-empty">Belum ada data termin ini</div>
+    </div>`;
+  }
+  return `<div class="termin-box">
+    <div class="termin-box-title">${label}</div>
+    <div class="termin-box-row"><span>Nilai kontrak</span><b>${fmtRp(nilai)}</b></div>
+    <div class="termin-box-row"><span>Jumlah lokus</span><b>${fmtInt(lokus)}</b></div>
+    <div class="termin-box-row"><span>Lokus SPJ lengkap</span><b>${fmtInt(spj)}</b></div>
+    ${realisasi !== null ? `<div class="termin-box-row"><span>Realisasi tersalur</span><b>${fmtRp(realisasi)}</b></div>` : ''}
+  </div>`;
+}
+
+function detailRowHtml(r){
+  const t1 = terminCell('Termin I', r.nilaiTermin1, r.lokusTermin1, r.spjTermin1, r.realisasi1, r.adaTermin1);
+  const t2 = terminCell('Termin II', r.nilaiTermin2, r.lokusTermin2, r.spjTermin2, null, r.adaTermin2);
+  const t3 = terminCell('Termin III', r.nilaiTermin3, r.lokusTermin3, r.spjTermin3, null, r.adaTermin3);
+  const nomor = r.nomorKontrak ? `<div class="detail-meta">No. Kontrak: <b>${r.nomorKontrak}</b></div>` : '';
+  return `<tr class="detail-row" data-detail-for="${rowKey(r)}">
+    <td colspan="10">
+      ${nomor}
+      <div class="termin-grid">${t1}${t2}${t3}</div>
+    </td>
+  </tr>`;
 }
 
 function renderTable(){
   const q = document.getElementById('tableSearch').value.trim().toLowerCase();
-  let rows = RAW.filter(r =>
-    (!activeProvince || r.provinsi === activeProvince) &&
-    (r.kabkota.toLowerCase().includes(q) || r.provinsi.toLowerCase().includes(q))
-  );
+  const statusF = document.getElementById('statusKontrakFilter').value;
+  const progF = document.getElementById('progressFilter').value;
+  let rows = RAW.filter(r => {
+    if (activeProvince && r.provinsi !== activeProvince) return false;
+    if (q && !(r.kabkota.toLowerCase().includes(q) || r.provinsi.toLowerCase().includes(q) || (r.pic||'').toLowerCase().includes(q))) return false;
+    if (statusF){
+      const sk = (r.statusKontrak||'').toLowerCase();
+      if (statusF === 'ya' && sk !== 'ya') return false;
+      if (statusF === 'belum' && !(sk && sk !== 'ya')) return false;
+      if (statusF === 'unknown' && sk) return false;
+    }
+    if (progF){
+      if (progF === 'done' && r.progressCls !== 'done') return false;
+      if (progF === 'progress' && r.progressCls !== 'progress') return false;
+      if (progF === 'none' && r.progressCls !== 'none') return false;
+    }
+    return true;
+  });
   if (sortKey){
     rows = rows.slice().sort((a,b)=>{
       const av=a[sortKey], bv=b[sortKey];
       if (typeof av === 'string') return av.localeCompare(bv) * sortDir;
-      return (av-bv) * sortDir;
+      return ((av||0)-(bv||0)) * sortDir;
     });
   }
+  window.__tableRows = rows; // dipakai downloadTableCsv
   document.getElementById('tableBody').innerHTML = rows.map(r => {
-    const st = statusOf(r);
+    const key = rowKey(r);
+    const open = expandedRows.has(key);
     const kontrakBadge = !r.statusKontrak
       ? '<span class="badge none">?</span>'
       : r.statusKontrak.toLowerCase() === 'ya'
       ? '<span class="badge done">Ya</span>'
       : '<span class="badge progress">Belum</span>';
-    return `<tr>
+    const mainRow = `<tr class="kab-row" data-key="${key}">
+      <td><span class="expand-toggle${open ? ' open' : ''}">&#9656;</span></td>
       <td>${r.provinsi}</td>
       <td>${r.kabkota}</td>
+      <td>${r.pic || '&mdash;'}</td>
+      <td>${kontrakBadge}</td>
       <td style="text-align:right">${fmtInt(r.target)}</td>
       <td style="text-align:right">${fmtRp(r.nilaiKontrak)}</td>
-      <td style="text-align:right">${fmtRp(r.nilaiTermin1)}</td>
-      <td style="text-align:right">${fmtRp(r.realisasi1)}</td>
-      <td style="text-align:right">${fmtInt(r.lokusTermin1)}</td>
+      <td style="text-align:right">${fmtInt(r.lokusKontrakTotal)}</td>
       <td style="text-align:right">${fmtInt(r.spjLengkap)}</td>
-      <td><span class="badge ${st.cls}">${st.label}</span></td>
-      <td>${kontrakBadge}</td>
-      <td>${r.pic || '&mdash;'}</td>
+      <td><span class="badge ${r.progressCls}">${r.progressLabel}</span></td>
     </tr>`;
-  }).join('') || '<tr><td colspan="11"><div class="empty-state">Tidak ada data yang cocok.</div></td></tr>';
+    return mainRow + (open ? detailRowHtml(r) : '');
+  }).join('') || '<tr><td colspan="10"><div class="empty-state">Tidak ada data yang cocok.</div></td></tr>';
   document.getElementById('rowCount').textContent = rows.length + ' dari ' + RAW.length + ' kab/kota ditampilkan';
 }
+
+document.getElementById('tableBody').addEventListener('click', (evt) => {
+  const tr = evt.target.closest('tr.kab-row');
+  if (!tr) return;
+  const key = tr.dataset.key;
+  if (expandedRows.has(key)) expandedRows.delete(key);
+  else expandedRows.add(key);
+  renderTable();
+});
 
 document.querySelectorAll('thead th[data-key]').forEach(th => {
   th.addEventListener('click', () => {
@@ -744,6 +896,33 @@ document.querySelectorAll('thead th[data-key]').forEach(th => {
     renderTable();
   });
 });
+
+function downloadTableCsv(){
+  const rows = window.__tableRows || [];
+  const header = ['Provinsi','Kab/Kota','PIC','Status Kontrak','No. Kontrak','Target Lokus','Nilai Kontrak',
+    'Nilai Kontrak Termin I','Jumlah Lokus Termin I','SPJ Lengkap Termin I','Realisasi Termin I',
+    'Nilai Kontrak Termin II','Jumlah Lokus Termin II','SPJ Lengkap Termin II',
+    'Nilai Kontrak Termin III','Jumlah Lokus Termin III','SPJ Lengkap Termin III',
+    'Total Lokus Terkontrak','Total SPJ Lengkap','Progres SPJ'];
+  const esc = v => '"' + String(v === undefined || v === null ? '' : v).replace(/"/g,'""') + '"';
+  const lines = [header.map(esc).join(',')];
+  rows.forEach(r => {
+    lines.push([
+      r.provinsi, r.kabkota, r.pic, r.statusKontrak, r.nomorKontrak, r.target, r.nilaiKontrak,
+      r.nilaiTermin1, r.lokusTermin1, r.spjTermin1, r.realisasi1,
+      r.nilaiTermin2, r.lokusTermin2, r.spjTermin2,
+      r.nilaiTermin3, r.lokusTermin3, r.spjTermin3,
+      r.lokusKontrakTotal, r.spjLengkap, r.progressLabel
+    ].map(esc).join(','));
+  });
+  const blob = new Blob(['﻿' + lines.join('\r\n')], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'rincian_kabkota_ckg_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 loadData();
 </script>
