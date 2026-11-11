@@ -211,17 +211,16 @@
         <h2>Peta Provinsi</h2>
         <p>Klik area provinsi untuk melihat batas kab/kota di dalamnya, atau klik lagi kab/kota untuk mencarinya di tabel bawah.</p>
       </div>
-      <div class="legend">
-        <span><i class="dot" style="background:var(--gray-400)"></i>Belum ada data</span>
-        <span><i class="dot" style="background:var(--amber-600)"></i>Belum kontrak</span>
-        <span><i class="dot" style="background:var(--teal-500)"></i>Sudah kontrak</span>
-        <span><i class="dot" style="background:var(--green-600)"></i>SPJ lengkap tinggi</span>
-      </div>
+      <div class="legend" id="mapLegend"></div>
     </div>
     <div class="card">
       <div class="map-toolbar">
         <button id="mapBackBtn" class="map-back-btn" onclick="clearProvinceFilter()" style="display:none">← Kembali ke peta nasional</button>
         <span id="mapTitle" class="map-title">Peta Provinsi</span>
+        <select id="mapModeSel" onchange="mapColorMode=this.value; renderMap(); renderProvinces();" style="margin-left:auto;padding:6px 10px;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;">
+          <option value="spj">Warna: Progres SPJ lengkap</option>
+          <option value="kontrak">Warna: Status kontrak</option>
+        </select>
       </div>
       <div id="mapWrap" class="map-wrap">
         <svg id="mapSvg" class="map-svg" viewBox="0 0 720 380" preserveAspectRatio="xMidYMid meet"></svg>
@@ -421,13 +420,14 @@ function computeProvinces(){
   for (const r of RAW){
     if (!map[r.provinsi]) map[r.provinsi] = {
       provinsi: r.provinsi, target:0, nilaiKontrak:0, nilaiTermin1:0, nilaiTermin2:0, nilaiTermin3:0,
-      realisasi1:0, lokusTermin1:0, lokusTermin2:0, lokusTermin3:0, spjLengkap:0, kabCount:0,
+      realisasi1:0, lokusTermin1:0, lokusTermin2:0, lokusTermin3:0, spjLengkap:0, kabCount:0, kabKontrak:0,
     };
     const p = map[r.provinsi];
     p.target += r.target; p.nilaiKontrak += r.nilaiKontrak;
     p.nilaiTermin1 += r.nilaiTermin1; p.nilaiTermin2 += r.nilaiTermin2; p.nilaiTermin3 += r.nilaiTermin3;
     p.realisasi1 += r.realisasi1; p.lokusTermin1 += r.lokusTermin1; p.lokusTermin2 += r.lokusTermin2;
     p.lokusTermin3 += r.lokusTermin3; p.spjLengkap += r.spjLengkap; p.kabCount += 1;
+    if ((r.statusKontrak||'').toLowerCase() === 'ya') p.kabKontrak += 1;
   }
   PROV = Object.values(map).sort((a,b)=>a.provinsi.localeCompare(b.provinsi));
   populateProvFilterOptions();
@@ -527,15 +527,44 @@ function renderCharts(){
     : 'Grafik menampilkan seluruh termin yang sudah tercatat di sheet.';
 }
 
+let mapColorMode = 'spj';
+const SPJ_BINS = [
+  {min:0,    max:0,    color:'#D6ECE8', label:'0% (belum ada SPJ lengkap)'},
+  {min:0.0001, max:0.25, color:'#7FD1C4', label:'1–25%'},
+  {min:0.25, max:0.5,  color:'#14B8A6', label:'25–50%'},
+  {min:0.5,  max:0.75, color:'#0F766E', label:'50–75%'},
+  {min:0.75, max:9,    color:'#0A4F4A', label:'≥75%'},
+];
+const NO_DATA = '#9AA8A4';
 function provProgress(p){
-  return p.lokusTermin1 ? p.spjLengkap / p.lokusTermin1 : 0;
+  const tot = p.lokusTermin1 + p.lokusTermin2 + p.lokusTermin3;
+  return tot ? p.spjLengkap / tot : 0;
+}
+function spjColor(ratio, hasLokus){
+  if (!hasLokus) return NO_DATA;
+  for (const b of SPJ_BINS) if (ratio >= b.min && ratio <= b.max) return b.color;
+  return SPJ_BINS[SPJ_BINS.length-1].color;
 }
 function provColor(p){
-  const pr = provProgress(p);
-  if (p.lokusTermin1 === 0) return '#9AA8A4';
-  if (pr === 0) return '#C2760C';
-  if (pr >= 0.5) return '#15803D';
-  return '#C2760C';
+  if (mapColorMode === 'kontrak'){
+    if (!p.kabCount) return NO_DATA;
+    const f = p.kabKontrak / p.kabCount;
+    if (f >= 1) return '#14B8A6';
+    if (f === 0) return '#C2760C';
+    return '#E0A84A';
+  }
+  return spjColor(provProgress(p), (p.lokusTermin1+p.lokusTermin2+p.lokusTermin3) > 0);
+}
+function renderMapLegend(){
+  const el = document.getElementById('mapLegend');
+  if (!el) return;
+  const dot = (c,t) => '<span><i class="dot" style="background:'+c+'"></i>'+t+'</span>';
+  if (mapColorMode === 'kontrak'){
+    el.innerHTML = dot('#14B8A6','Semua kab/kota sudah kontrak') + dot('#E0A84A','Sebagian sudah kontrak') +
+      dot('#C2760C','Belum ada yang kontrak') + dot(NO_DATA,'Belum ada data');
+  } else {
+    el.innerHTML = SPJ_BINS.map(b => dot(b.color, b.label)).join('') + dot(NO_DATA,'Belum ada lokus');
+  }
 }
 
 function renderProvinces(){
@@ -661,11 +690,12 @@ function normKabName(s){
 
 function kabColor(row){
   if (!row) return '#D8DEDC';
-  if (!row.statusKontrak) return '#9AA8A4';
-  if (row.statusKontrak.toLowerCase() !== 'ya') return '#C2760C';
-  const pr = row.lokusTermin1 ? row.spjLengkap/row.lokusTermin1 : 0;
-  if (pr >= 0.5) return '#15803D';
-  return '#14B8A6';
+  if (mapColorMode === 'kontrak'){
+    if (!row.statusKontrak) return NO_DATA;
+    return row.statusKontrak.toLowerCase() === 'ya' ? '#14B8A6' : '#C2760C';
+  }
+  const tot = row.lokusKontrakTotal;
+  return spjColor(tot ? row.spjLengkap / tot : 0, tot > 0);
 }
 
 function onMapHover(evt, title, sub){
@@ -697,6 +727,7 @@ function renderMap(){
   const backBtn = document.getElementById('mapBackBtn');
   const titleEl = document.getElementById('mapTitle');
   const emptyNote = document.getElementById('mapEmptyNote');
+  renderMapLegend();
   if (!svgEl || typeof PROVINCE_GEOJSON === 'undefined') return;
 
   if (mapMode === 'province' && mapProvince){
@@ -720,7 +751,7 @@ function renderMap(){
       const color = kabColor(row);
       const d = geomToPath(f.geometry, bbox, MAP_W, MAP_H, MAP_PAD);
       const sub = row
-        ? 'Kontrak: ' + (row.statusKontrak || '?') + (row.target ? ' &middot; Target ' + fmtInt(row.target) + ' lokus' : '')
+        ? 'Kontrak: ' + (row.statusKontrak || '?') + ' &middot; SPJ lengkap ' + fmtInt(row.spjLengkap) + '/' + fmtInt(row.lokusKontrakTotal) + ' lokus (T-I ' + fmtInt(row.lokusTermin1) + ', T-II ' + fmtInt(row.lokusTermin2) + ', T-III ' + fmtInt(row.lokusTermin3) + ')'
         : 'Tidak ada data';
       paths += '<path d="' + d + '" fill="' + color + '" stroke="#fff" stroke-width="0.7" class="map-path" ' +
         'onclick="onMapKabClick(\'' + kabName.replace(/'/g,"\\'") + '\')" ' +
@@ -742,7 +773,7 @@ function renderMap(){
       const p = abbr ? PROV.find(x => x.provinsi === abbr) : null;
       const color = p ? provColor(p) : '#D8DEDC';
       const d = geomToPath(f.geometry, bbox, MAP_W, MAP_H, MAP_PAD);
-      const sub = p ? fmtPct(provProgress(p)) + ' SPJ lengkap &middot; ' + p.kabCount + ' kab/kota' : 'Tidak ada data';
+      const sub = p ? p.kabKontrak + '/' + p.kabCount + ' kab/kota sudah kontrak &middot; SPJ lengkap ' + fmtPct(provProgress(p)) + ' (' + fmtInt(p.spjLengkap) + '/' + fmtInt(p.lokusTermin1+p.lokusTermin2+p.lokusTermin3) + ' lokus)' : 'Tidak ada data';
       paths += '<path d="' + d + '" fill="' + color + '" stroke="#fff" stroke-width="0.7" class="map-path" ' +
         'onclick="onMapProvinceClick(\'' + (abbr||'').replace(/'/g,"\\'") + '\')" ' +
         'onmousemove="onMapHover(event,\'' + (abbr||fullName).replace(/'/g,"\\'") + '\',\'' + sub.replace(/'/g,"\\'") + '\')" ' +
